@@ -1,0 +1,14 @@
+---
+- name: Create deploy user
+  become: yes
+  user:
+    name: deploy
+    groups: docker
+    append: yes
+    shell: /bin/bash
+
+- name: Authorize deploy's public key
+  become: yes
+  authorized_key:
+    user: deploy
+    key: "{{ lookup('file', deploy_key) }}"

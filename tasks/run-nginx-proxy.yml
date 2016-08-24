@@ -1,0 +1,17 @@
+---
+- name: Upload server-wide.conf
+  become: yes
+  copy:
+    src: ../files/nginx-proxy/server-wide.conf
+    dest: /root/server-wide.conf
+- name: Run a nginx-proxy container
+  docker_container:
+    name: proxy
+    image: jwilder/nginx-proxy
+    restart_policy: always
+    recreate: no
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      - /root/server-wide.conf:/etc/nginx/conf.d/server-wide.conf:ro

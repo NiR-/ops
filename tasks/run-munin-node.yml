@@ -1,0 +1,17 @@
+---
+- name: Install munin-node
+  become: yes
+  package:
+    name: munin-node
+
+- name: Retrieve munin-server's IP address
+  command: 'docker inspect -f {%raw%}"{{.NetworkSettings.IPAddress}}"{%endraw%} munin'
+  register: munin_server_ip
+
+- name: Allow access from the server container
+  become: yes
+  blockinfile:
+    content: "allow ^{{ munin_server_ip.stdout|replace('.', '\\.') }}$"
+    dest: /etc/munin/munin-node.conf
+  notify:
+    - restart munin

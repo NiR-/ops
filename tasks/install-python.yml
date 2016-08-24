@@ -1,0 +1,4 @@
+---
+- name: Ensure python is installed
+  raw: "dpkg -l python 2>/dev/null || $(apt-get update && apt-get install -qy python)"
+  become: yes

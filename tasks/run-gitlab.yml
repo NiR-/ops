@@ -1,0 +1,68 @@
+---
+- name: Ensure /srv/gitlab exists
+  become: yes
+  file:
+    name: /srv/gitlab
+    state: directory
+
+- name: Upload gitlab.rb
+  become: yes
+  copy:
+    src: ../files/gitlab/gitlab.rb
+    dest: /srv/gitlab/gitlab.rb
+
+# Create network if necessary
+- name: Check if gitlab_default network exists
+  command: docker network inspect gitlab_default
+  failed_when: false
+  register: net_exists
+
+- name: Create gitlab_default network
+  command: docker network create gitlab_default
+  when: net_exists.rc != 0
+
+# Add proxy container to the network
+- name: Check if nginx-proxy is already associated to the network
+  command: docker inspect -f {%raw%}"{{.NetworkSettings.Networks.gitlab_default}}"{%endraw%} proxy
+  register: is_proxy_associated
+
+- name: Add proxy container to the network
+  command: docker network connect gitlab_default proxy
+  when: "'<no value>' in is_proxy_associated.stdout"
+  register: add_proxy_to_net
+
+# @TODO: enhance gitlab config
+- name: Run gitlab
+  docker_service:
+    project_name: gitlab
+    definition:
+      version: '2'
+
+      services:
+        gitlab:
+          image: gitlab/gitlab-ce:8.8.5-ce.1
+          hostname: "{{ gitlab_hostnames|first }}"
+          restart: always
+          environment:
+            VIRTUAL_HOST: "{{ gitlab_hostnames|join(',') }}"
+          ports:
+            - "1022:22"
+          volumes:
+            - "gitlab_config:/etc/gitlab"
+            - "gitlab_logs:/var/log/gitlab"
+            - "gitlab_data:/var/opt/gitlab"
+            - "/srv/gitlab/gitlab.rb:/etc/gitlab/gitlab.rb:ro"
+        runner:
+          image: gitlab/gitlab-runner:alpine-v1.2.0
+          restart: always
+
+      volumes:
+        gitlab_config:
+          driver: local
+        gitlab_logs:
+          driver: local
+        gitlab_data:
+          driver: local
+  register: docker_service
+
+- debug: var=docker_service

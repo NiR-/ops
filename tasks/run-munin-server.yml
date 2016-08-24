@@ -1,0 +1,16 @@
+---
+- name: Run a munin-server container
+  docker_container:
+    name: munin
+    image: buildfailure/munin-server
+    restart_policy: always # unless-stopped
+    recreate: no
+    env:
+      VIRTUAL_HOST: "munin.akerouanton.name"
+      MUNIN_USER: "{{ munin_http_user }}"
+      MUNIN_PASSWORD: "{{ munin_http_pass }}"
+      NODES: "serveur-1:{{ ansible_docker0.ipv4.address }}"
+    volumes:
+      - "munin_logs:/var/log/munin"
+      - "munin_db:/var/lib/munin"
+      - "munin_cache:/var/cache/munin"

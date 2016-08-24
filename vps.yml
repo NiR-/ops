@@ -1,0 +1,29 @@
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - include: tasks/install-python.yml
+
+- hosts: all
+  vars_files:
+    - "vars/main.yml"
+    - "vars/custom.yml"
+  pre_tasks:
+    - include: tasks/install-apt-transport-https.yml
+      when: 'ansible_pkg_mgr == "apt"'
+    - include: tasks/install-packages.yml
+      vars:
+        packages: ['vim', 'python-yaml']
+    - include: tasks/deploy-user.yml
+  roles:
+    - role: angstwad.docker_ubuntu
+      become: yes
+      vars:
+        docker_group_members: ['{{ ansible_user }}', deploy]
+  post_tasks:
+    - include: tasks/log-into-dockerhub.yml
+    - include: tasks/run-munin-server.yml
+    - include: tasks/run-munin-node.yml
+    - include: tasks/run-gitlab.yml
+  handlers:
+    - include: handlers/main.yml

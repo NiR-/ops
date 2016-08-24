@@ -1,0 +1,10 @@
+---
+munin_http_user: admin
+munin_http_pass: admin
+
+# Docker Hub credentials
+docker_email: ''
+docker_user: ''
+docker_pass: ''
+
+gitlab_hostname: ''
